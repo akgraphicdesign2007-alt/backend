@@ -8,8 +8,13 @@ const {
     deleteTestimonial,
 } = require('../controllers/testimonialController');
 
+// Route for text-only testimonials (from frontend forms)
 router.route('/')
     .get(getTestimonials)
+    .post(createTestimonial); // No upload middleware for simple text testimonials
+
+// Route for testimonials with images (admin uploads)
+router.route('/upload')
     .post(upload.single('image'), createTestimonial);
 
 router.route('/:id')

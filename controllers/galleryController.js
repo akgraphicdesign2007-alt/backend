@@ -57,43 +57,69 @@ exports.getGalleryById = async (req, res) => {
 // @access  Private (for now public for demo)
 exports.createGallery = async (req, res) => {
     try {
+        console.log('Received request body:', req.body);
+        console.log('Received file:', req.file);
+        
         const { title, description, category } = req.body;
 
         if (!req.file) {
+            console.log('No file received');
             return res.status(400).json({
                 success: false,
                 message: 'Please upload an image',
             });
         }
 
-        // Upload image to Cloudinary
-        const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'portfolio/gallery',
-                    resource_type: 'image',
-                },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            uploadStream.end(req.file.buffer);
+        console.log('File details:', {
+            fieldname: req.file.fieldname,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            path: req.file.path,
+            size: req.file.size,
+            filename: req.file.filename
+        });
+
+        // Validate file type
+        if (!req.file.mimetype.startsWith('image/')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please upload a valid image file',
+            });
+        }
+
+        // Since we're using Cloudinary storage, the file is already uploaded
+        // and req.file.path contains the Cloudinary URL
+        const imageUrl = req.file.path;
+        
+        // Extract the Cloudinary public ID from the filename
+        // The filename is in format: "ak_design_uploads/actual_public_id"
+        const cloudinaryId = req.file.filename.startsWith('ak_design_uploads/') 
+            ? req.file.filename.replace('ak_design_uploads/', '')
+            : req.file.filename;
+
+        console.log('Creating gallery item in database with:', {
+            title,
+            description,
+            category,
+            imageUrl,
+            cloudinaryId
         });
 
         const galleryItem = await Gallery.create({
             title,
             description,
             category,
-            imageUrl: result.secure_url,
-            cloudinaryId: result.public_id,
+            imageUrl: imageUrl,
+            cloudinaryId: cloudinaryId,
         });
 
+        console.log('Gallery item created successfully:', galleryItem._id);
         res.status(201).json({
             success: true,
             data: galleryItem,
         });
     } catch (error) {
+        console.error('Gallery creation error:', error);
         res.status(500).json({
             success: false,
             message: 'Server Error',

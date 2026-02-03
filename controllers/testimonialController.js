@@ -32,13 +32,33 @@ exports.getTestimonials = async (req, res) => {
 // @route   POST /api/testimonials
 exports.createTestimonial = async (req, res) => {
     try {
-        const testimonial = await Testimonial.create(req.body);
+        console.log('Creating testimonial with data:', req.body);
+        console.log('File received:', req.file);
+        
+        // Prepare testimonial data
+        const testimonialData = { ...req.body };
+        
+        // If an image was uploaded, add it to the testimonial data
+        if (req.file) {
+            testimonialData.image = req.file.path;
+        }
+        
+        const testimonial = await Testimonial.create(testimonialData);
         res.status(201).json({
             success: true,
             data: testimonial,
             message: 'Testimonial submitted for approval',
         });
     } catch (error) {
+        console.error('Testimonial creation error:', error);
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({
+                success: false,
+                message: 'Validation Error',
+                errors: messages
+            });
+        }
         res.status(400).json({
             success: false,
             message: error.message,

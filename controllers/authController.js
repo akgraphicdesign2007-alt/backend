@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -202,7 +203,7 @@ exports.inviteUser = async (req, res) => {
         });
 
         // Determine frontend URL (Use Env Variable or default to Vite's localhost)
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://akdesigns.space';
 
         // Setup Account link including email and OTP params
         const setupLink = `${frontendUrl}/admin/reset-password?email=${encodeURIComponent(email)}&otp=${otp}`;
@@ -211,7 +212,6 @@ exports.inviteUser = async (req, res) => {
         const message = `Hello ${name},\n\nYou have been invited to manage the AK Design Admin Dashboard.\n\nPlease click the link below to set up your password and access your account:\n\n${setupLink}\n\nThis invitation link is valid for 24 hours.`;
 
         try {
-            const sendEmail = require('../utils/sendEmail');
             await sendEmail({
                 email: user.email,
                 subject: 'Admin Dashboard Invitation - Set up your password',

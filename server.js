@@ -26,19 +26,19 @@ const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
-        
+
         // Check if origin is in allowed list
         if (allowedOrigins.indexOf(origin) !== -1) {
             return callback(null, true);
         }
-        
+
         // For development, allow localhost with any port
         if (process.env.NODE_ENV !== 'production') {
             if (origin && origin.startsWith('http://localhost:')) {
                 return callback(null, true);
             }
         }
-        
+
         const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
         return callback(new Error(msg), false);
     },
@@ -71,6 +71,7 @@ app.use('/api/contact', require('./routes/contact'));
 app.use('/api/testimonials', require('./routes/testimonial'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/content', require('./routes/pageContent'));
+app.use('/api/settings', require('./routes/settings'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -80,7 +81,7 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    
+
     // Handle Multer file size errors
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -92,11 +93,17 @@ app.use((err, req, res, next) => {
         if (err.code === 'LIMIT_FILE_COUNT') {
             return res.status(400).json({
                 success: false,
-                message: 'Too many files uploaded. Only 1 file allowed.',
+                message: 'Too many files uploaded.',
+            });
+        }
+        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({
+                success: false,
+                message: 'Unexpected field name or too many files for a field.',
             });
         }
     }
-    
+
     // Handle other Multer errors
     if (err.message && err.message.includes('File too large')) {
         return res.status(400).json({
@@ -104,7 +111,7 @@ app.use((err, req, res, next) => {
             message: 'File too large. Maximum file size is 30MB.',
         });
     }
-    
+
     res.status(500).json({
         success: false,
         message: err.message || 'Server Error',

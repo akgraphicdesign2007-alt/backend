@@ -58,59 +58,62 @@ exports.getGalleryById = async (req, res) => {
 exports.createGallery = async (req, res) => {
     try {
         console.log('Received request body:', req.body);
-        console.log('Received file:', req.file);
-        
-        const { title, description, category } = req.body;
+        console.log('Received files:', req.files);
 
-        if (!req.file) {
-            console.log('No file received');
+        const { title, description, category, aboutProject, date, client } = req.body;
+
+        if (!req.files || !req.files.image || req.files.image.length === 0) {
+            console.log('No image received');
             return res.status(400).json({
                 success: false,
-                message: 'Please upload an image',
+                message: 'Please upload a cover image',
             });
         }
 
-        console.log('File details:', {
-            fieldname: req.file.fieldname,
-            originalname: req.file.originalname,
-            mimetype: req.file.mimetype,
-            path: req.file.path,
-            size: req.file.size,
-            filename: req.file.filename
-        });
+        const imageFile = req.files.image[0];
 
         // Validate file type
-        if (!req.file.mimetype.startsWith('image/')) {
+        if (!imageFile.mimetype.startsWith('image/')) {
             return res.status(400).json({
                 success: false,
                 message: 'Please upload a valid image file',
             });
         }
 
-        // Since we're using Cloudinary storage, the file is already uploaded
-        // and req.file.path contains the Cloudinary URL
-        const imageUrl = req.file.path;
-        
-        // Extract the Cloudinary public ID from the filename
-        // The filename is in format: "ak_design_uploads/actual_public_id"
-        const cloudinaryId = req.file.filename.startsWith('ak_design_uploads/') 
-            ? req.file.filename.replace('ak_design_uploads/', '')
-            : req.file.filename;
+        const imageUrl = imageFile.path;
 
-        console.log('Creating gallery item in database with:', {
-            title,
-            description,
-            category,
-            imageUrl,
-            cloudinaryId
-        });
+        const cloudinaryId = imageFile.filename.startsWith('ak_design_uploads/')
+            ? imageFile.filename.replace('ak_design_uploads/', '')
+            : imageFile.filename;
+
+        // Process branding images
+        const brandingImages = [];
+        if (req.files.brandingImages && req.files.brandingImages.length > 0) {
+            req.files.brandingImages.forEach(file => {
+                const bImageUrl = file.path;
+                const bCloudinaryId = file.filename.startsWith('ak_design_uploads/')
+                    ? file.filename.replace('ak_design_uploads/', '')
+                    : file.filename;
+
+                brandingImages.push({
+                    url: bImageUrl,
+                    cloudinaryId: bCloudinaryId
+                });
+            });
+        }
+
+        console.log('Creating gallery item in database...');
 
         const galleryItem = await Gallery.create({
             title,
             description,
             category,
+            aboutProject,
+            date,
+            client,
             imageUrl: imageUrl,
             cloudinaryId: cloudinaryId,
+            brandingImages: brandingImages
         });
 
         console.log('Gallery item created successfully:', galleryItem._id);
@@ -142,28 +145,38 @@ exports.updateGallery = async (req, res) => {
             });
         }
 
-        // If new image is uploaded, delete old one and upload new
-        if (req.file) {
-            // Delete old image from Cloudinary
-            await cloudinary.uploader.destroy(galleryItem.cloudinaryId);
+        // FIX FOR UPDATE: Since multer-storage-cloudinary handles upload directly, we can just grab from req.files
+        if (req.files && req.files.image && req.files.image.length > 0) {
+            const imageFile = req.files.image[0];
 
-            // Upload new image
-            const result = await new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                        folder: 'portfolio/gallery',
-                        resource_type: 'image',
-                    },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                );
-                uploadStream.end(req.file.buffer);
+            // Delete old empty cover image logic
+            if (galleryItem.cloudinaryId) {
+                await cloudinary.uploader.destroy(galleryItem.cloudinaryId);
+            }
+
+            req.body.imageUrl = imageFile.path;
+            const newCloudinaryId = imageFile.filename.startsWith('ak_design_uploads/')
+                ? imageFile.filename.replace('ak_design_uploads/', '')
+                : imageFile.filename;
+            req.body.cloudinaryId = newCloudinaryId;
+        }
+
+        // Handle branding images - append to existing
+        if (req.files && req.files.brandingImages && req.files.brandingImages.length > 0) {
+            const newBrandingImages = [];
+            req.files.brandingImages.forEach(file => {
+                const bImageUrl = file.path;
+                const bCloudinaryId = file.filename.startsWith('ak_design_uploads/')
+                    ? file.filename.replace('ak_design_uploads/', '')
+                    : file.filename;
+
+                newBrandingImages.push({
+                    url: bImageUrl,
+                    cloudinaryId: bCloudinaryId
+                });
             });
 
-            req.body.imageUrl = result.secure_url;
-            req.body.cloudinaryId = result.public_id;
+            req.body.brandingImages = [...(galleryItem.brandingImages || []), ...newBrandingImages];
         }
 
         galleryItem = await Gallery.findByIdAndUpdate(req.params.id, req.body, {

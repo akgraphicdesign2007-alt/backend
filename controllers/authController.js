@@ -179,6 +179,56 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
+// @desc    Invite Admin User
+// @route   POST /api/auth/invite
+// @access  Private/Admin
+exports.inviteUser = async (req, res) => {
+    try {
+        const { name, email, role } = req.body;
+
+        // Generate a random temporary password merely to pass DB validation
+        const temporaryPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+
+        // Generate 6-digit OTP for initial password setup link
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        const user = await User.create({
+            name,
+            email,
+            password: temporaryPassword,
+            role: role || 'admin',
+            resetPasswordOtp: otp,
+            resetPasswordExpire: Date.now() + 24 * 60 * 60 * 1000 // Valid for 24 hours
+        });
+
+        // Determine frontend URL (Use Env Variable or default to Vite's localhost)
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+        // Setup Account link including email and OTP params
+        const setupLink = `${frontendUrl}/admin/reset-password?email=${encodeURIComponent(email)}&otp=${otp}`;
+
+        // Send email with the invitation link
+        const message = `Hello ${name},\n\nYou have been invited to manage the AK Design Admin Dashboard.\n\nPlease click the link below to set up your password and access your account:\n\n${setupLink}\n\nThis invitation link is valid for 24 hours.`;
+
+        try {
+            const sendEmail = require('../utils/sendEmail');
+            await sendEmail({
+                email: user.email,
+                subject: 'Admin Dashboard Invitation - Set up your password',
+                message,
+            });
+            res.status(200).json({ success: true, data: 'User created and email sent' });
+        } catch (err) {
+            console.error('Email sending failed:', err);
+            // Delete the user if email dispatch totally fails to allow re-invite
+            await User.findByIdAndDelete(user._id);
+            res.status(500).json({ success: false, message: 'User created but email failed to send. Rolled back. Check SMTP config.' });
+        }
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
 // Helper function to get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
     // Create token

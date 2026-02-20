@@ -23,6 +23,22 @@ const gallerySchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    aboutProject: {
+        type: String,
+        default: '',
+    },
+    date: {
+        type: String,
+        default: '',
+    },
+    client: {
+        type: String,
+        default: '',
+    },
+    brandingImages: [{
+        url: String,
+        cloudinaryId: String
+    }],
     createdAt: {
         type: Date,
         default: Date.now,

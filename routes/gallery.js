@@ -11,11 +11,17 @@ const {
 
 router.route('/')
     .get(getAllGallery)
-    .post(upload.single('image'), createGallery);
+    .post(upload.fields([
+        { name: 'image', maxCount: 1 },
+        { name: 'brandingImages', maxCount: 10 }
+    ]), createGallery);
 
 router.route('/:id')
     .get(getGalleryById)
-    .put(upload.single('image'), updateGallery)
+    .put(upload.fields([
+        { name: 'image', maxCount: 1 },
+        { name: 'brandingImages', maxCount: 10 }
+    ]), updateGallery)
     .delete(deleteGallery);
 
 module.exports = router;

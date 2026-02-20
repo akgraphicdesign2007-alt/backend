@@ -158,10 +158,15 @@ const testimonialData = [
     }
 ];
 
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
 const seedDatabase = async () => {
     try {
         // Connect to MongoDB
-        await mongoose.connect(process.env.MONGODB_URI);
+        await mongoose.connect(process.env.MONGODB_URI, {
+            family: 4 // Force IPv4
+        });
         console.log('Connected to MongoDB');
 
         // Clear existing data

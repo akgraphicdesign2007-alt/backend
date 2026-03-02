@@ -1,27 +1,19 @@
 const mongoose = require('mongoose');
 
 const SettingsSchema = new mongoose.Schema({
-    seoTitle: {
+    siteName: {
         type: String,
         default: 'AK Design | Premium Portfolio',
     },
-    seoDescription: {
-        type: String,
-        default: 'Discover AK Design, premium portfolio featuring UI/UX, Branding, and Motion design.',
-    },
-    seoKeywords: {
-        type: String,
-        default: 'design, portfolio, UI, UX, branding, motion',
-    },
-    contactEmail: {
+    email: {
         type: String,
         default: 'hello@akdesign.space',
     },
-    contactPhone: {
+    phone: {
         type: String,
         default: '',
     },
-    location: {
+    address: {
         type: String,
         default: 'New York, USA',
     },
@@ -29,8 +21,9 @@ const SettingsSchema = new mongoose.Schema({
         instagram: { type: String, default: '' },
         twitter: { type: String, default: '' },
         linkedin: { type: String, default: '' },
-        dribbble: { type: String, default: '' },
-        behance: { type: String, default: '' }
+        behance: { type: String, default: '' },
+        facebook: { type: String, default: '' },
+        telegram: { type: String, default: '' }
     },
     createdAt: {
         type: Date,

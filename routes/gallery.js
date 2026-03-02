@@ -9,19 +9,21 @@ const {
     deleteGallery,
 } = require('../controllers/galleryController');
 
+const { protect, authorize } = require('../middleware/auth');
+
 router.route('/')
     .get(getAllGallery)
-    .post(upload.fields([
+    .post(protect, authorize('admin'), upload.fields([
         { name: 'image', maxCount: 1 },
         { name: 'brandingImages', maxCount: 10 }
     ]), createGallery);
 
 router.route('/:id')
     .get(getGalleryById)
-    .put(upload.fields([
+    .put(protect, authorize('admin'), upload.fields([
         { name: 'image', maxCount: 1 },
         { name: 'brandingImages', maxCount: 10 }
     ]), updateGallery)
-    .delete(deleteGallery);
+    .delete(protect, authorize('admin'), deleteGallery);
 
 module.exports = router;

@@ -8,19 +8,24 @@ const TestimonialSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        required: [true, 'Please add a role (e.g., CEO, Designer)'],
         trim: true,
     },
-    company: {
+    content: {
         type: String,
-        trim: true,
+        required: [true, 'Please add testimonial content'],
     },
-    message: {
-        type: String,
-        required: [true, 'Please add a message'],
+    rating: {
+        type: Number,
+        default: 5,
+        min: 1,
+        max: 5
     },
     image: {
         type: String, // URL to image
+        default: '',
+    },
+    cloudinaryId: {
+        type: String,
         default: '',
     },
     approved: {

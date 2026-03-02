@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 exports.protect = async (req, res, next) => {
@@ -16,13 +15,19 @@ exports.protect = async (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        const user = await User.findOne({
+            sessionToken: token,
+            sessionExpire: { $gt: Date.now() }
+        });
 
-        req.user = await User.findById(decoded.id);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid or expired session' });
+        }
 
+        req.user = user;
         next();
     } catch (err) {
-        return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
+        return res.status(500).json({ success: false, message: 'Server error during authentication' });
     }
 };
 

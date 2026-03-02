@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const UserSchema = new mongoose.Schema({
     name: {
@@ -12,14 +12,22 @@ const UserSchema = new mongoose.Schema({
         required: [true, 'Please add an email'],
         unique: true,
         match: [
-            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/,
             'Please add a valid email',
         ],
     },
     password: {
         type: String,
-        required: [true, 'Please add a password'],
-        minlength: 6,
+        required: [function () { return this.status === 'active'; }, 'Please add a password'],
+        minlength: [6, 'Password must be at least 6 characters'],
+        validate: {
+            validator: function (v) {
+                // Ignore minlength if we are pending or if value is intentionally not set
+                if (this.status === 'pending' && !v) return true;
+                return v && v.length >= 6;
+            },
+            message: 'Password must be at least 6 characters'
+        },
         select: false,
     },
     role: {
@@ -27,8 +35,17 @@ const UserSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'admin',
     },
+    status: {
+        type: String,
+        enum: ['active', 'pending'],
+        default: 'active',
+    },
+    inviteToken: String,
+    inviteExpires: Date,
     resetPasswordOtp: String,
     resetPasswordExpire: Date,
+    sessionToken: String,
+    sessionExpire: Date,
     createdAt: {
         type: Date,
         default: Date.now,
@@ -36,20 +53,21 @@ const UserSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        return next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Sign JWT and return
-UserSchema.methods.getSignedJwtToken = function () {
-    return jwt.sign({ id: this._id }, process.env.JWT_SECRET || 'secret', {
-        expiresIn: process.env.JWT_EXPIRE || '30d',
-    });
+// Generate opaque session token
+UserSchema.methods.generateSessionToken = function () {
+    const token = crypto.randomBytes(32).toString('hex');
+    this.sessionToken = token;
+    this.sessionExpire = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    return token;
 };
 
 // Match user entered password to hashed password in database

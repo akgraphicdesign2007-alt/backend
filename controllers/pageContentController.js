@@ -5,15 +5,9 @@ const PageContent = require('../models/PageContent');
 exports.getAllContent = async (req, res) => {
     try {
         const content = await PageContent.find();
-        // Convert array to object keyed by section for easier frontend consumption
-        const contentMap = {};
-        content.forEach(item => {
-            contentMap[item.section] = item;
-        });
-
         res.status(200).json({
             success: true,
-            data: contentMap,
+            data: content,
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -31,8 +25,12 @@ exports.updateContent = async (req, res) => {
         if (content) {
             // Update
             const updateData = { ...req.body };
-            if (req.file) {
-                updateData.image = req.file.path; // Cloudinary URL
+            if (req.files) {
+                if (req.files.image) updateData.image = req.files.image[0].path;
+                if (req.files.resume) updateData.resume = req.files.resume[0].path;
+            } else if (req.file) {
+                // Fallback just in case
+                updateData.image = req.file.path;
             }
 
             content = await PageContent.findOneAndUpdate({ section }, updateData, {
@@ -45,7 +43,10 @@ exports.updateContent = async (req, res) => {
                 section,
                 ...req.body
             };
-            if (req.file) {
+            if (req.files) {
+                if (req.files.image) createData.image = req.files.image[0].path;
+                if (req.files.resume) createData.resume = req.files.resume[0].path;
+            } else if (req.file) {
                 createData.image = req.file.path;
             }
 

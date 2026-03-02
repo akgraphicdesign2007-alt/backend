@@ -64,10 +64,9 @@ exports.getBlogBySlug = async (req, res) => {
 
 // @desc    Create blog post
 // @route   POST /api/blog
-// @access  Private (for now public for demo)
 exports.createBlog = async (req, res) => {
     try {
-        const { title, content, excerpt, category, featured } = req.body;
+        const { title, content, excerpt, category, author, date } = req.body;
 
         if (!req.file) {
             return res.status(400).json({
@@ -76,29 +75,15 @@ exports.createBlog = async (req, res) => {
             });
         }
 
-        // Upload image to Cloudinary
-        const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'portfolio/blog',
-                    resource_type: 'image',
-                },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            uploadStream.end(req.file.buffer);
-        });
-
         const blog = await Blog.create({
             title,
             content,
             excerpt,
             category,
-            featured: featured || false,
-            imageUrl: result.secure_url,
-            cloudinaryId: result.public_id,
+            author,
+            date,
+            imageUrl: req.file.path,
+            cloudinaryId: req.file.filename,
         });
 
         res.status(201).json({
@@ -115,8 +100,7 @@ exports.createBlog = async (req, res) => {
 };
 
 // @desc    Update blog post
-// @route   PUT /api/blog/:id
-// @access  Private (for now public for demo)
+// @route   PUT /api/blog/id/:id
 exports.updateBlog = async (req, res) => {
     try {
         let blog = await Blog.findById(req.params.id);
@@ -128,28 +112,14 @@ exports.updateBlog = async (req, res) => {
             });
         }
 
-        // If new image is uploaded, delete old one and upload new
+        // If new image is uploaded
         if (req.file) {
-            // Delete old image from Cloudinary
-            await cloudinary.uploader.destroy(blog.cloudinaryId);
-
-            // Upload new image
-            const result = await new Promise((resolve, reject) => {
-                const uploadStream = cloudinary.uploader.upload_stream(
-                    {
-                        folder: 'portfolio/blog',
-                        resource_type: 'image',
-                    },
-                    (error, result) => {
-                        if (error) reject(error);
-                        else resolve(result);
-                    }
-                );
-                uploadStream.end(req.file.buffer);
-            });
-
-            req.body.imageUrl = result.secure_url;
-            req.body.cloudinaryId = result.public_id;
+            // Delete old image from Cloudinary if possible
+            if (blog.cloudinaryId) {
+                await cloudinary.uploader.destroy(blog.cloudinaryId);
+            }
+            req.body.imageUrl = req.file.path;
+            req.body.cloudinaryId = req.file.filename;
         }
 
         blog = await Blog.findByIdAndUpdate(req.params.id, req.body, {

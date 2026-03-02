@@ -60,3 +60,29 @@ exports.getAllContacts = async (req, res) => {
         });
     }
 };
+// @desc    Delete a contact submission
+// @route   DELETE /api/contact/:id
+// @access  Private (for admin)
+exports.deleteContact = async (req, res) => {
+    try {
+        const contact = await Contact.findByIdAndDelete(req.params.id);
+
+        if (!contact) {
+            return res.status(404).json({
+                success: false,
+                message: 'Contact not found',
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Message deleted successfully',
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: error.message,
+        });
+    }
+};

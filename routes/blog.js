@@ -9,15 +9,17 @@ const {
     deleteBlog,
 } = require('../controllers/blogController');
 
+const { protect, authorize } = require('../middleware/auth');
+
 router.route('/')
     .get(getAllBlogs)
-    .post(upload.single('image'), createBlog);
+    .post(protect, authorize('admin'), upload.single('image'), createBlog);
 
 router.route('/:slug')
     .get(getBlogBySlug);
 
 router.route('/id/:id')
-    .put(upload.single('image'), updateBlog)
-    .delete(deleteBlog);
+    .put(protect, authorize('admin'), upload.single('image'), updateBlog)
+    .delete(protect, authorize('admin'), deleteBlog);
 
 module.exports = router;

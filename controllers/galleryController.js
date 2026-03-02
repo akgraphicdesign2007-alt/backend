@@ -81,23 +81,15 @@ exports.createGallery = async (req, res) => {
         }
 
         const imageUrl = imageFile.path;
-
-        const cloudinaryId = imageFile.filename.startsWith('ak_design_uploads/')
-            ? imageFile.filename.replace('ak_design_uploads/', '')
-            : imageFile.filename;
+        const cloudinaryId = imageFile.filename;
 
         // Process branding images
         const brandingImages = [];
         if (req.files.brandingImages && req.files.brandingImages.length > 0) {
             req.files.brandingImages.forEach(file => {
-                const bImageUrl = file.path;
-                const bCloudinaryId = file.filename.startsWith('ak_design_uploads/')
-                    ? file.filename.replace('ak_design_uploads/', '')
-                    : file.filename;
-
                 brandingImages.push({
-                    url: bImageUrl,
-                    cloudinaryId: bCloudinaryId
+                    url: file.path,
+                    cloudinaryId: file.filename
                 });
             });
         }
@@ -155,24 +147,16 @@ exports.updateGallery = async (req, res) => {
             }
 
             req.body.imageUrl = imageFile.path;
-            const newCloudinaryId = imageFile.filename.startsWith('ak_design_uploads/')
-                ? imageFile.filename.replace('ak_design_uploads/', '')
-                : imageFile.filename;
-            req.body.cloudinaryId = newCloudinaryId;
+            req.body.cloudinaryId = imageFile.filename;
         }
 
         // Handle branding images - append to existing
         if (req.files && req.files.brandingImages && req.files.brandingImages.length > 0) {
             const newBrandingImages = [];
             req.files.brandingImages.forEach(file => {
-                const bImageUrl = file.path;
-                const bCloudinaryId = file.filename.startsWith('ak_design_uploads/')
-                    ? file.filename.replace('ak_design_uploads/', '')
-                    : file.filename;
-
                 newBrandingImages.push({
-                    url: bImageUrl,
-                    cloudinaryId: bCloudinaryId
+                    url: file.path,
+                    cloudinaryId: file.filename
                 });
             });
 

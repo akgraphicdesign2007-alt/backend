@@ -34,15 +34,15 @@ exports.createTestimonial = async (req, res) => {
     try {
         console.log('Creating testimonial with data:', req.body);
         console.log('File received:', req.file);
-        
+
         // Prepare testimonial data
         const testimonialData = { ...req.body };
-        
+
         // If an image was uploaded, add it to the testimonial data
         if (req.file) {
             testimonialData.image = req.file.path;
         }
-        
+
         const testimonial = await Testimonial.create(testimonialData);
         res.status(201).json({
             success: true,
@@ -67,9 +67,13 @@ exports.createTestimonial = async (req, res) => {
 };
 
 // @desc    Update testimonial (Approve/Edit)
-// @route   PUT /api/testimonials/:id
+// @route   PUT /api/testimonial/:id
 exports.updateTestimonial = async (req, res) => {
     try {
+        if (req.file) {
+            req.body.image = req.file.path;
+        }
+
         const testimonial = await Testimonial.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true,

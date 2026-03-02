@@ -22,6 +22,10 @@ const PageContentSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
+    resume: {
+        type: String,
+        default: '',
+    },
     meta: {
         type: Map, // Flexible field for extra data like 'buttonText', 'videoUrl'
         of: String,

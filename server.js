@@ -68,9 +68,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/gallery', require('./routes/gallery'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/contact', require('./routes/contact'));
-app.use('/api/testimonials', require('./routes/testimonial'));
+app.use('/api/testimonial', require('./routes/testimonial'));
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/content', require('./routes/pageContent'));
+app.use('/api/pageContent', require('./routes/pageContent'));
 app.use('/api/settings', require('./routes/settings'));
 
 // Health check route

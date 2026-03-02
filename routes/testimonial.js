@@ -8,6 +8,8 @@ const {
     deleteTestimonial,
 } = require('../controllers/testimonialController');
 
+const { protect, authorize } = require('../middleware/auth');
+
 // Route for text-only testimonials (from frontend forms)
 router.route('/')
     .get(getTestimonials)
@@ -15,10 +17,10 @@ router.route('/')
 
 // Route for testimonials with images (admin uploads)
 router.route('/upload')
-    .post(upload.single('image'), createTestimonial);
+    .post(protect, authorize('admin'), upload.single('image'), createTestimonial);
 
 router.route('/:id')
-    .put(updateTestimonial)
-    .delete(deleteTestimonial);
+    .put(protect, authorize('admin'), upload.single('image'), updateTestimonial)
+    .delete(protect, authorize('admin'), deleteTestimonial);
 
 module.exports = router;

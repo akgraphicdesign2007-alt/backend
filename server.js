@@ -73,6 +73,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/pageContent', require('./routes/pageContent'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/media', require('./routes/media'));
+app.use('/api/sitemap', require('./routes/sitemap'));
 
 // Health check route
 app.get('/api/health', (req, res) => {
